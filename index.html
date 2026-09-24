@@ -1,0 +1,37 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b0b0b">
+<link rel="manifest" href="manifest.webmanifest"><title>무음컷</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+main{width:min(620px,calc(100% - 28px));margin:28px auto}.card{background:#171719;border:1px solid #303034;border-radius:20px;padding:20px;margin-top:14px}
+h1{font-size:30px;margin:0}.sub{color:#999;font-size:14px;line-height:1.55}.pick{display:block;border:1px dashed #687226;background:#11120d;border-radius:20px;padding:30px 18px;text-align:center;font-weight:800}
+.pick small{display:block;color:#888;margin-top:8px;font-weight:400}input[type=file]{display:none}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.preset input{display:none}.preset span{display:block;border:1px solid #333;border-radius:30px;padding:12px 4px;text-align:center;font-weight:700}.preset input:checked+span{background:#caff24;color:#111;border-color:#caff24}
+.ctrl{margin-top:22px}.row{display:flex;justify-content:space-between;margin-bottom:8px}input[type=range]{width:100%;accent-color:#caff24}.help,.note{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
+button{width:100%;border:0;border-radius:16px;padding:16px;margin-top:22px;background:#caff24;color:#111;font-size:17px;font-weight:900}button:disabled{opacity:.4}.status{color:#caff24;font-size:13px;line-height:1.55;margin-top:15px;white-space:pre-wrap}.err{color:#ff7373}audio{width:100%;margin-top:15px}
+</style></head><body><main>
+<h1>무음컷</h1><p class="sub">MP3 · WAV · M4A · AAC 음성 파일의 긴 공백을 아이폰 안에서 줄입니다.</p>
+<label class="pick" for="file">음성 파일 선택<small>MP3 · WAV · M4A · AAC 지원</small></label>
+<input id="file" type="file" accept=".mp3,.wav,.m4a,.aac,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac">
+<div class="card" id="fc" hidden><span id="fn"></span></div>
+<div class="card"><div>세기</div><div class="presets">
+<label class="preset"><input type="radio" name="p" value="soft"><span>부드럽게</span></label>
+<label class="preset"><input type="radio" name="p" value="normal" checked><span>보통</span></label>
+<label class="preset"><input type="radio" name="p" value="tight"><span>타이트</span></label></div>
+<div class="ctrl"><div class="row"><b>무음 기준</b><b id="tv">-50 dB</b></div><input id="t" type="range" min="-70" max="-25" value="-50"><div class="help">이보다 작은 소리를 공백으로 봅니다</div></div>
+<div class="ctrl"><div class="row"><b>최소 길이</b><b id="mv">0.10초</b></div><input id="m" type="range" min=".03" max="1" step=".01" value=".10"><div class="help">이보다 짧은 쉼은 그대로 둡니다</div></div>
+<div class="ctrl"><div class="row"><b>남길 공백</b><b id="kv">0.10초</b></div><input id="k" type="range" min="0" max=".5" step=".01" value=".10"><div class="help">문장 사이에 남길 숨 길이입니다</div></div>
+<button id="run" disabled>무음 줄이기</button><div id="res" hidden><audio id="aud" controls></audio><button id="save">결과 파일 저장/공유</button></div>
+<div id="st" class="status"></div><div class="note">원본은 변경하지 않습니다. 결과는 호환성이 높은 WAV로 새로 생성합니다.</div></div>
+</main><script>
+const q=s=>document.querySelector(s),f=q('#file'),run=q('#run'),t=q('#t'),m=q('#m'),k=q('#k'),st=q('#st'),res=q('#res'),aud=q('#aud');let blob,name;
+const P={soft:[-55,.18,.16],normal:[-50,.10,.10],tight:[-45,.06,.05]};
+function ref(){q('#tv').textContent=t.value+' dB';q('#mv').textContent=(+m.value).toFixed(2)+'초';q('#kv').textContent=(+k.value).toFixed(2)+'초'}
+[t,m,k].forEach(x=>x.oninput=ref);document.querySelectorAll('input[name=p]').forEach(x=>x.onchange=()=>{let a=P[x.value];t.value=a[0];m.value=a[1];k.value=a[2];ref()});
+function ext(n){return (n.toLowerCase().match(/\.([a-z0-9]+)$/)||[])[1]||''}
+f.onchange=()=>{let x=f.files[0];if(!x)return;q('#fn').textContent=x.name;q('#fc').hidden=false;res.hidden=true;st.className='status';if(!['mp3','wav','m4a','aac'].includes(ext(x.name))){run.disabled=true;st.className='status err';st.textContent='MP3, WAV, M4A 또는 AAC 파일을 선택해 주세요.'}else{run.disabled=false;st.textContent=''}};
+function wav(ch,sr){let n=ch[0].length,nc=ch.length,b=new ArrayBuffer(44+n*nc*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,b.byteLength-8,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*nc*2,true);let o=44;for(let i=0;i<n;i++)for(let c=0;c<nc;c++){let s=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,s<0?s*32768:s*32767,true);o+=2}return new Blob([b],{type:'audio/wav'})}
+run.onclick=async()=>{let ctx;try{run.disabled=true;st.className='status';st.textContent='파일을 읽는 중입니다...';let fi=f.files[0],AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();if(ctx.state==='suspended')await ctx.resume();let ab=await fi.arrayBuffer(),buf;try{buf=await ctx.decodeAudioData(ab.slice(0))}catch(e){throw Error(ext(fi.name)==='m4a'?'이 M4A의 내부 코덱을 Safari가 해석하지 못했습니다. 아이폰 음성 메모에서 저장한 일반 M4A(AAC)는 지원됩니다.':'이 오디오 형식을 Safari가 해석하지 못했습니다.')}let sr=buf.sampleRate,n=buf.length,nc=buf.numberOfChannels,ch=[];for(let c=0;c<nc;c++)ch.push(buf.getChannelData(c));let thr=Math.pow(10,(+t.value)/20),min=Math.round(+m.value*sr),keep=Math.round(+k.value*sr),frame=Math.max(32,Math.round(sr*.01)),sil=[];for(let s=0;s<n;s+=frame){let sum=0,cnt=0,e=Math.min(n,s+frame);for(let i=s;i<e;i+=2){let z=0;for(let c=0;c<nc;c++)z+=ch[c][i]*ch[c][i];sum+=z/nc;cnt++}sil.push(Math.sqrt(sum/Math.max(1,cnt))<thr)}let rm=new Uint8Array(n),a=0;while(a<sil.length){if(!sil[a]){a++;continue}let b=a+1;while(b<sil.length&&sil[b])b++;let ss=a*frame,ee=Math.min(n,b*frame),len=ee-ss;if(len>=min){let trim=Math.max(0,len-keep),L=Math.floor(trim/2),R=trim-L;rm.fill(1,ss,ss+L);rm.fill(1,ee-R,ee)}a=b}let kept=0;for(let i=0;i<n;i++)if(!rm[i])kept++;if(!kept)throw Error('설정이 너무 강합니다.');let out=Array.from({length:nc},()=>new Float32Array(kept)),j=0;for(let i=0;i<n;i++)if(!rm[i]){for(let c=0;c<nc;c++)out[c][j]=ch[c][i];j++}blob=wav(out,sr);name=(fi.name.replace(/\.[^.]+$/,'')||'audio')+'_무음컷.wav';aud.src=URL.createObjectURL(blob);res.hidden=false;st.textContent=`완료! ${(n/sr).toFixed(1)}초 → ${(kept/sr).toFixed(1)}초`}catch(e){st.className='status err';st.textContent='오류: '+e.message}finally{run.disabled=false;if(ctx)try{await ctx.close()}catch(e){}}};
+q('#save').onclick=async()=>{if(!blob)return;let of=new File([blob],name,{type:'audio/wav'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[of]})){try{await navigator.share({files:[of],title:'무음컷 결과'});return}catch(e){if(e.name==='AbortError')return}}let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()};ref();
+</script></body></html>
