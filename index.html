@@ -13,29 +13,41 @@ body{margin:0;background:#0b0b0b;color:#f7f7f7;font-family:-apple-system,BlinkMa
 main{width:min(640px,calc(100% - 28px));margin:28px auto 60px}
 h1{font-size:32px;margin:0}.sub{color:#98989d;font-size:14px;line-height:1.55;margin:10px 0 18px}
 .pick{display:block;border:1px dashed #687226;background:#11120d;border-radius:22px;padding:32px 18px;text-align:center;font-weight:800}
-.pick small{display:block;color:#888;margin-top:8px;font-weight:400}input[type=file]{display:none}
+.pick small{display:block;color:#888;margin-top:8px;font-weight:400}
+input[type=file]{display:none}
 .card{background:#171719;border:1px solid #303034;border-radius:20px;padding:20px;margin-top:14px}
 .filename{word-break:break-all;font-size:15px}
 .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
-.preset input{display:none}.preset span{display:block;border:1px solid #333;border-radius:30px;padding:12px 4px;text-align:center;font-weight:700}
+.preset input{display:none}
+.preset span{display:block;border:1px solid #333;border-radius:30px;padding:12px 4px;text-align:center;font-weight:700}
 .preset input:checked+span{background:#caff24;color:#111;border-color:#caff24}
-.ctrl{margin-top:22px}.row{display:flex;justify-content:space-between;margin-bottom:8px}.row b:last-child{font-size:17px}
-input[type=range]{width:100%;accent-color:#caff24}.help,.note{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
+.ctrl{margin-top:22px}
+.row{display:flex;justify-content:space-between;margin-bottom:8px}
+.row b:last-child{font-size:17px}
+input[type=range]{width:100%;accent-color:#caff24}
+.help,.note{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
 button{width:100%;border:0;border-radius:16px;padding:16px;margin-top:22px;background:#caff24;color:#111;font-size:17px;font-weight:900}
-button:disabled{opacity:.4}.status{color:#caff24;font-size:13px;line-height:1.6;margin-top:15px;white-space:pre-wrap;word-break:break-word}
-.err{color:#ff7373}.warn{color:#ffad66}.progress{margin-top:12px;height:8px;background:#2b2b2e;border-radius:99px;overflow:hidden}.bar{height:100%;width:0;background:#caff24;transition:width .15s}
-video,audio{width:100%;margin-top:15px;border-radius:12px;background:#000}
+button:disabled{opacity:.4}
+.status{color:#caff24;font-size:13px;line-height:1.6;margin-top:15px;white-space:pre-wrap;word-break:break-word}
+.err{color:#ff7373}
+.progress{margin-top:12px;height:8px;background:#2b2b2e;border-radius:99px;overflow:hidden}
+.bar{height:100%;width:0;background:#caff24;transition:width .15s}
+audio{width:100%;margin-top:15px}
+.badge{display:inline-block;margin-top:8px;padding:5px 9px;border-radius:999px;background:#252529;color:#bdbdc2;font-size:11px}
 </style>
 </head>
 <body>
 <main>
 <h1>무음컷</h1>
-<p class="sub">MP3 · WAV · M4A · AAC · MP4 · MOV의 긴 공백을 아이폰에서 줄입니다.</p>
+<p class="sub">오디오 파일은 그대로 처리하고, MP4/MOV 영상은 음성만 추출한 뒤 무음 구간을 줄여 WAV로 저장합니다.</p>
 
-<label class="pick" for="file">파일 선택<small>오디오 또는 영상 파일을 선택하세요</small></label>
+<label class="pick" for="file">파일 선택<small>MP3 · WAV · M4A · AAC · MP4 · MOV 지원</small></label>
 <input id="file" type="file" accept=".mp3,.wav,.m4a,.aac,.mp4,.mov,audio/*,video/mp4,video/quicktime">
 
-<div class="card" id="fileCard" hidden><div class="filename" id="fileName"></div></div>
+<div class="card" id="fileCard" hidden>
+  <div class="filename" id="fileName"></div>
+  <div class="badge" id="fileType"></div>
+</div>
 
 <div class="card">
 <div>세기</div>
@@ -64,16 +76,16 @@ video,audio{width:100%;margin-top:15px;border-radius:12px;background:#000}
 </div>
 
 <button id="run" disabled>무음 줄이기</button>
+
 <div class="progress" id="pg" hidden><div class="bar" id="bar"></div></div>
 
 <div id="result" hidden>
-<video id="video" controls playsinline hidden></video>
-<audio id="audio" controls hidden></audio>
-<button id="save">결과 파일 저장/공유</button>
+<audio id="audio" controls></audio>
+<button id="save">WAV 저장/공유</button>
 </div>
 
 <div id="st" class="status"></div>
-<div class="note">원본은 변경하지 않습니다. 영상은 MP4, 오디오는 WAV로 새로 생성합니다. 영상 처리는 아이폰에서 시간이 걸릴 수 있습니다.</div>
+<div class="note">원본 파일은 변경하지 않습니다. 영상 파일도 결과는 WAV 음성 파일로 저장됩니다.</div>
 </div>
 </main>
 
@@ -82,198 +94,219 @@ video,audio{width:100%;margin-top:15px;border-radius:12px;background:#000}
 
 <script>
 const q=s=>document.querySelector(s);
-const f=q('#file'), run=q('#run'), t=q('#t'), m=q('#m'), k=q('#k');
-const st=q('#st'), result=q('#result'), video=q('#video'), audio=q('#audio'), save=q('#save');
-const pg=q('#pg'), bar=q('#bar');
-let outBlob=null, outName='', isVideo=false, ffmpeg=null, loaded=false, logLines=[];
+const f=q('#file'),run=q('#run'),t=q('#t'),m=q('#m'),k=q('#k'),st=q('#st');
+const result=q('#result'),audio=q('#audio'),save=q('#save'),pg=q('#pg'),bar=q('#bar');
+let ffmpeg=null,loaded=false,outBlob=null,outName='',logLines=[],currentIsVideo=false;
 
 const P={soft:[-55,.18,.16],normal:[-50,.10,.10],tight:[-45,.06,.05]};
-function ref(){q('#tv').textContent=t.value+' dB';q('#mv').textContent=(+m.value).toFixed(2)+'초';q('#kv').textContent=(+k.value).toFixed(2)+'초'}
-[t,m,k].forEach(x=>x.oninput=ref);
-document.querySelectorAll('input[name=p]').forEach(x=>x.onchange=()=>{let a=P[x.value];t.value=a[0];m.value=a[1];k.value=a[2];ref()});
+function refresh(){
+  q('#tv').textContent=t.value+' dB';
+  q('#mv').textContent=(+m.value).toFixed(2)+'초';
+  q('#kv').textContent=(+k.value).toFixed(2)+'초';
+}
+[t,m,k].forEach(x=>x.oninput=refresh);
+document.querySelectorAll('input[name=p]').forEach(x=>x.onchange=()=>{
+  const a=P[x.value]; t.value=a[0];m.value=a[1];k.value=a[2];refresh();
+});
 
 function ext(name){return (name.toLowerCase().match(/\.([a-z0-9]+)$/)||[])[1]||''}
-function videoExt(e){return e==='mp4'||e==='mov'}
+function isVideoExt(e){return e==='mp4'||e==='mov'}
 
 f.onchange=()=>{
- const x=f.files[0]; if(!x)return;
- q('#fileName').textContent=x.name;q('#fileCard').hidden=false;
- const e=ext(x.name);
- if(!['mp3','wav','m4a','aac','mp4','mov'].includes(e)){
-   run.disabled=true; st.className='status err'; st.textContent='지원하지 않는 파일입니다.';
-   return;
- }
- isVideo=videoExt(e); run.disabled=false; st.className='status'; st.textContent='';
- result.hidden=true; pg.hidden=true; bar.style.width='0%';
+  const x=f.files[0]; if(!x)return;
+  const e=ext(x.name);
+  q('#fileName').textContent=x.name;
+  q('#fileCard').hidden=false;
+  currentIsVideo=isVideoExt(e);
+  q('#fileType').textContent=currentIsVideo?'영상 → 음성 추출 후 WAV':'오디오 → WAV';
+  result.hidden=true;pg.hidden=true;bar.style.width='0%';st.className='status';
+  if(!['mp3','wav','m4a','aac','mp4','mov'].includes(e)){
+    run.disabled=true;
+    st.className='status err';
+    st.textContent='지원하지 않는 파일입니다.';
+  }else{
+    run.disabled=false;st.textContent='';
+  }
 };
 
 async function ensureFFmpeg(){
- if(loaded)return;
- st.className='status'; st.textContent='처리 엔진을 처음 한 번 준비하는 중입니다...';
- const {FFmpeg}=FFmpegWASM;
- const {toBlobURL}=FFmpegUtil;
- ffmpeg=new FFmpeg();
+  if(loaded)return;
+  st.className='status';
+  st.textContent='처리 엔진을 처음 한 번 준비하는 중입니다...';
+  const {FFmpeg}=FFmpegWASM;
+  const {toBlobURL}=FFmpegUtil;
+  ffmpeg=new FFmpeg();
 
- ffmpeg.on('log',({message})=>{
-   logLines.push(message);
-   if(logLines.length>400)logLines.shift();
- });
- ffmpeg.on('progress',({progress})=>{
-   const p=Math.max(0,Math.min(1,progress||0));
-   bar.style.width=(p*100).toFixed(0)+'%';
- });
+  ffmpeg.on('log',({message})=>{
+    logLines.push(message);
+    if(logLines.length>500)logLines.shift();
+  });
+  ffmpeg.on('progress',({progress})=>{
+    const p=Math.max(0,Math.min(1,progress||0));
+    bar.style.width=(p*100).toFixed(0)+'%';
+  });
 
- const base='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
- await ffmpeg.load({
-   coreURL:await toBlobURL(base+'/ffmpeg-core.js','text/javascript'),
-   wasmURL:await toBlobURL(base+'/ffmpeg-core.wasm','application/wasm')
- });
- loaded=true;
+  const base='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  await ffmpeg.load({
+    coreURL:await toBlobURL(base+'/ffmpeg-core.js','text/javascript'),
+    wasmURL:await toBlobURL(base+'/ffmpeg-core.wasm','application/wasm')
+  });
+  loaded=true;
 }
 
 function parseDuration(lines){
- for(let i=lines.length-1;i>=0;i--){
-   const m=lines[i].match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
-   if(m)return (+m[1])*3600+(+m[2])*60+(+m[3]);
- }
- return null;
+  for(let i=lines.length-1;i>=0;i--){
+    const x=lines[i].match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
+    if(x)return (+x[1])*3600+(+x[2])*60+(+x[3]);
+  }
+  return null;
 }
 
-function parseSilences(lines, duration){
- const sil=[], starts=[];
- for(const line of lines){
-   let m=line.match(/silence_start:\s*([0-9.]+)/);
-   if(m){starts.push(+m[1]);continue}
-   m=line.match(/silence_end:\s*([0-9.]+)/);
-   if(m){
-     const s=starts.length?starts.shift():0;
-     sil.push([s,+m[1]]);
-   }
- }
- while(starts.length && duration!=null)sil.push([starts.shift(),duration]);
- return sil;
+function parseSilences(lines,duration){
+  const sil=[],starts=[];
+  for(const line of lines){
+    let x=line.match(/silence_start:\s*([0-9.]+)/);
+    if(x){starts.push(+x[1]);continue;}
+    x=line.match(/silence_end:\s*([0-9.]+)/);
+    if(x){
+      const s=starts.length?starts.shift():0;
+      sil.push([s,+x[1]]);
+    }
+  }
+  while(starts.length&&duration!=null)sil.push([starts.shift(),duration]);
+  return sil;
 }
 
-function keepSegments(duration,silences,minSilence,keepSilence){
- const cuts=[];
- for(const [s,e] of silences){
-   if(e-s<minSilence)continue;
-   const remove=Math.max(0,(e-s)-keepSilence);
-   if(remove<=0)continue;
-   const half=remove/2;
-   cuts.push([s+((e-s)-remove)/2, e-((e-s)-remove)/2]);
- }
- cuts.sort((a,b)=>a[0]-b[0]);
- const segs=[];let pos=0;
- for(const [a,b] of cuts){
-   const aa=Math.max(0,a),bb=Math.min(duration,b);
-   if(aa>pos+0.005)segs.push([pos,aa]);
-   pos=Math.max(pos,bb);
- }
- if(duration>pos+0.005)segs.push([pos,duration]);
- return segs.filter(([a,b])=>b-a>0.01);
+function buildKeepSegments(duration,silences,minSilence,keepSilence){
+  const cuts=[];
+  for(const [s,e] of silences){
+    if(e-s<minSilence)continue;
+    const trim=Math.max(0,(e-s)-keepSilence);
+    if(trim<=0)continue;
+    const keepEach=(e-s-trim)/2;
+    cuts.push([s+keepEach,e-keepEach]);
+  }
+  cuts.sort((a,b)=>a[0]-b[0]);
+  const segs=[];let pos=0;
+  for(const [a,b] of cuts){
+    const aa=Math.max(0,a),bb=Math.min(duration,b);
+    if(aa>pos+0.005)segs.push([pos,aa]);
+    pos=Math.max(pos,bb);
+  }
+  if(duration>pos+0.005)segs.push([pos,duration]);
+  return segs.filter(([a,b])=>b-a>0.01);
 }
-
 function sec(x){return Math.max(0,x).toFixed(3)}
 
-async function processFile(){
- const fi=f.files[0]; if(!fi)return;
- run.disabled=true; result.hidden=true; pg.hidden=false; bar.style.width='0%'; st.className='status';
+run.onclick=async()=>{
+  const fi=f.files[0]; if(!fi)return;
+  run.disabled=true;result.hidden=true;pg.hidden=false;bar.style.width='0%';st.className='status';
 
- try{
-   await ensureFFmpeg();
-   const {fetchFile}=FFmpegUtil;
-   const e=ext(fi.name), inName='input.'+e;
-   await ffmpeg.writeFile(inName,await fetchFile(fi));
+  try{
+    await ensureFFmpeg();
+    const {fetchFile}=FFmpegUtil;
+    const e=ext(fi.name);
+    const inName='input.'+e;
+    const extracted='source.wav';
+    const output='output.wav';
 
-   st.textContent='무음 구간을 분석하는 중입니다...';
-   logLines=[];
-   await ffmpeg.exec([
-     '-hide_banner','-i',inName,
-     '-af',`silencedetect=noise=${t.value}dB:d=${m.value}`,
-     '-f','null','-'
-   ]);
+    try{await ffmpeg.deleteFile(inName)}catch(_){}
+    try{await ffmpeg.deleteFile(extracted)}catch(_){}
+    try{await ffmpeg.deleteFile(output)}catch(_){}
 
-   const duration=parseDuration(logLines);
-   if(!duration)throw new Error('파일 길이를 읽지 못했습니다.');
+    st.textContent=currentIsVideo?'영상에서 음성을 추출하는 중입니다...':'오디오를 준비하는 중입니다...';
+    await ffmpeg.writeFile(inName,await fetchFile(fi));
 
-   const silences=parseSilences(logLines,duration);
-   const segs=keepSegments(duration,silences,+m.value,+k.value);
+    // First convert/extract to a simple PCM WAV. This avoids re-encoding video entirely.
+    await ffmpeg.exec([
+      '-hide_banner','-i',inName,
+      '-vn',
+      '-ac','1',
+      '-ar','44100',
+      '-c:a','pcm_s16le',
+      extracted
+    ]);
 
-   if(!segs.length)throw new Error('설정값이 너무 강해서 남길 구간이 없습니다.');
-   if(segs.length===1 && Math.abs((segs[0][1]-segs[0][0])-duration)<0.05){
-     throw new Error('줄일 수 있는 무음 구간을 찾지 못했습니다.');
-   }
+    st.textContent='무음 구간을 분석하는 중입니다...';
+    logLines=[];
+    await ffmpeg.exec([
+      '-hide_banner','-i',extracted,
+      '-af',`silencedetect=noise=${t.value}dB:d=${m.value}`,
+      '-f','null','-'
+    ]);
 
-   st.textContent=`무음 ${silences.length}개 감지 · 결과를 만드는 중입니다...`;
-   bar.style.width='0%';
+    const duration=parseDuration(logLines);
+    if(!duration)throw new Error('음성 길이를 읽지 못했습니다.');
 
-   if(isVideo){
-     let filters=[],inputs=[];
-     segs.forEach(([a,b],i)=>{
-       filters.push(`[0:v]trim=start=${sec(a)}:end=${sec(b)},setpts=PTS-STARTPTS[v${i}]`);
-       filters.push(`[0:a]atrim=start=${sec(a)}:end=${sec(b)},asetpts=PTS-STARTPTS[a${i}]`);
-       inputs.push(`[v${i}][a${i}]`);
-     });
-     filters.push(`${inputs.join('')}concat=n=${segs.length}:v=1:a=1[outv][outa]`);
+    const silences=parseSilences(logLines,duration);
+    const segs=buildKeepSegments(duration,silences,+m.value,+k.value);
 
-     const out='output.mp4';
-     await ffmpeg.exec([
-       '-hide_banner','-i',inName,
-       '-filter_complex',filters.join(';'),
-       '-map','[outv]','-map','[outa]',
-       '-c:v','libx264','-preset','ultrafast','-crf','24',
-       '-c:a','aac','-b:a','160k',
-       '-threads','1','-movflags','+faststart',
-       out
-     ]);
-     const data=await ffmpeg.readFile(out);
-     outBlob=new Blob([data.buffer],{type:'video/mp4'});
-     outName=fi.name.replace(/\.[^.]+$/,'')+'_무음컷.mp4';
-     video.src=URL.createObjectURL(outBlob);video.hidden=false;audio.hidden=true;
-   }else{
-     let filters=[],inputs=[];
-     segs.forEach(([a,b],i)=>{
-       filters.push(`[0:a]atrim=start=${sec(a)}:end=${sec(b)},asetpts=PTS-STARTPTS[a${i}]`);
-       inputs.push(`[a${i}]`);
-     });
-     filters.push(`${inputs.join('')}concat=n=${segs.length}:v=0:a=1[outa]`);
+    if(!segs.length)throw new Error('설정값이 너무 강해서 남길 음성이 없습니다.');
 
-     const out='output.wav';
-     await ffmpeg.exec([
-       '-hide_banner','-i',inName,
-       '-filter_complex',filters.join(';'),
-       '-map','[outa]','-c:a','pcm_s16le','-threads','1',out
-     ]);
-     const data=await ffmpeg.readFile(out);
-     outBlob=new Blob([data.buffer],{type:'audio/wav'});
-     outName=fi.name.replace(/\.[^.]+$/,'')+'_무음컷.wav';
-     audio.src=URL.createObjectURL(outBlob);audio.hidden=false;video.hidden=true;
-   }
+    st.textContent=`무음 ${silences.length}개 감지 · WAV를 만드는 중입니다...`;
+    bar.style.width='0%';
 
-   result.hidden=false;bar.style.width='100%';
-   const kept=segs.reduce((s,[a,b])=>s+(b-a),0);
-   st.className='status';st.textContent=`완료! ${duration.toFixed(1)}초 → ${kept.toFixed(1)}초 (${Math.max(0,duration-kept).toFixed(1)}초 줄어듦)`;
- }catch(e){
-   st.className='status err';
-   st.textContent='오류: '+(e?.message||String(e))+'\n\n아이폰에서는 긴 영상이나 고해상도 영상이 메모리 부족으로 실패할 수 있습니다.';
- }finally{
-   run.disabled=false;
- }
-}
+    if(segs.length===1 && Math.abs((segs[0][1]-segs[0][0])-duration)<0.05){
+      // No meaningful silence to cut: just use extracted audio.
+      const data=await ffmpeg.readFile(extracted);
+      outBlob=new Blob([data.buffer],{type:'audio/wav'});
+    }else{
+      const filters=[],inputs=[];
+      segs.forEach(([a,b],i)=>{
+        filters.push(`[0:a]atrim=start=${sec(a)}:end=${sec(b)},asetpts=PTS-STARTPTS[a${i}]`);
+        inputs.push(`[a${i}]`);
+      });
+      filters.push(`${inputs.join('')}concat=n=${segs.length}:v=0:a=1[outa]`);
 
-run.onclick=processFile;
+      await ffmpeg.exec([
+        '-hide_banner','-i',extracted,
+        '-filter_complex',filters.join(';'),
+        '-map','[outa]',
+        '-c:a','pcm_s16le',
+        '-ar','44100',
+        '-ac','1',
+        output
+      ]);
+
+      const data=await ffmpeg.readFile(output);
+      outBlob=new Blob([data.buffer],{type:'audio/wav'});
+    }
+
+    outName=(fi.name.replace(/\.[^.]+$/,'')||'audio')+'_무음컷.wav';
+    audio.src=URL.createObjectURL(outBlob);
+    result.hidden=false;
+    bar.style.width='100%';
+
+    const kept=segs.reduce((s,[a,b])=>s+(b-a),0);
+    const reduced=Math.max(0,duration-kept);
+    st.className='status';
+    st.textContent=`완료! ${duration.toFixed(1)}초 → ${kept.toFixed(1)}초 (${reduced.toFixed(1)}초 줄어듦)\n결과: ${outName}`;
+  }catch(e){
+    st.className='status err';
+    st.textContent='오류: '+(e?.message||String(e))+'\n\n영상은 음성만 추출하므로 이전 MP4 재인코딩 방식보다 훨씬 가볍습니다.';
+  }finally{
+    run.disabled=false;
+  }
+};
 
 save.onclick=async()=>{
- if(!outBlob)return;
- const type=isVideo?'video/mp4':'audio/wav';
- const outFile=new File([outBlob],outName,{type});
- if(navigator.share&&navigator.canShare&&navigator.canShare({files:[outFile]})){
-   try{await navigator.share({files:[outFile],title:'무음컷 결과'});return}catch(e){if(e.name==='AbortError')return}
- }
- const a=document.createElement('a');a.href=URL.createObjectURL(outBlob);a.download=outName;a.click();
+  if(!outBlob)return;
+  const outFile=new File([outBlob],outName,{type:'audio/wav'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[outFile]})){
+    try{
+      await navigator.share({files:[outFile],title:'무음컷 WAV'});
+      return;
+    }catch(e){
+      if(e.name==='AbortError')return;
+    }
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(outBlob);
+  a.download=outName;
+  a.click();
 };
-ref();
+
+refresh();
 </script>
 </body>
 </html>
