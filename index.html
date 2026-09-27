@@ -1,83 +1,279 @@
-<!doctype html><html lang="ko"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b0b0b">
-<link rel="manifest" href="manifest.webmanifest"><title>무음컷</title>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="manifest" href="manifest.webmanifest">
+<title>무음컷</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
-main{width:min(620px,calc(100% - 28px));margin:28px auto}.card{background:#171719;border:1px solid #303034;border-radius:20px;padding:20px;margin-top:14px}
-h1{font-size:30px;margin:0}.sub{color:#999;font-size:14px;line-height:1.55}.pick{display:block;border:1px dashed #687226;background:#11120d;border-radius:20px;padding:30px 18px;text-align:center;font-weight:800}
-.pick small{display:block;color:#888;margin-top:8px;font-weight:400}input[type=file]{display:none}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
-.preset input{display:none}.preset span{display:block;border:1px solid #333;border-radius:30px;padding:12px 4px;text-align:center;font-weight:700}.preset input:checked+span{background:#caff24;color:#111;border-color:#caff24}
-.ctrl{margin-top:22px}.row{display:flex;justify-content:space-between;margin-bottom:8px}input[type=range]{width:100%;accent-color:#caff24}.help,.note{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
-button{width:100%;border:0;border-radius:16px;padding:16px;margin-top:22px;background:#caff24;color:#111;font-size:17px;font-weight:900}button:disabled{opacity:.4}.status{color:#caff24;font-size:13px;line-height:1.55;margin-top:15px;white-space:pre-wrap}.err{color:#ff7373}audio{width:100%;margin-top:15px}
-</style></head><body><main>
-<h1>무음컷</h1><p class="sub">MP3 · WAV · M4A · AAC 음성과 MP4 · MOV 영상의 긴 공백을 아이폰 안에서 줄입니다.</p>
-<label class="pick" for="file">음성 파일 선택<small>MP3 · WAV · M4A · AAC · MP4 · MOV 지원</small></label>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0b;color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+main{width:min(640px,calc(100% - 28px));margin:28px auto 60px}
+h1{font-size:32px;margin:0}.sub{color:#98989d;font-size:14px;line-height:1.55;margin:10px 0 18px}
+.pick{display:block;border:1px dashed #687226;background:#11120d;border-radius:22px;padding:32px 18px;text-align:center;font-weight:800}
+.pick small{display:block;color:#888;margin-top:8px;font-weight:400}input[type=file]{display:none}
+.card{background:#171719;border:1px solid #303034;border-radius:20px;padding:20px;margin-top:14px}
+.filename{word-break:break-all;font-size:15px}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.preset input{display:none}.preset span{display:block;border:1px solid #333;border-radius:30px;padding:12px 4px;text-align:center;font-weight:700}
+.preset input:checked+span{background:#caff24;color:#111;border-color:#caff24}
+.ctrl{margin-top:22px}.row{display:flex;justify-content:space-between;margin-bottom:8px}.row b:last-child{font-size:17px}
+input[type=range]{width:100%;accent-color:#caff24}.help,.note{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
+button{width:100%;border:0;border-radius:16px;padding:16px;margin-top:22px;background:#caff24;color:#111;font-size:17px;font-weight:900}
+button:disabled{opacity:.4}.status{color:#caff24;font-size:13px;line-height:1.6;margin-top:15px;white-space:pre-wrap;word-break:break-word}
+.err{color:#ff7373}.warn{color:#ffad66}.progress{margin-top:12px;height:8px;background:#2b2b2e;border-radius:99px;overflow:hidden}.bar{height:100%;width:0;background:#caff24;transition:width .15s}
+video,audio{width:100%;margin-top:15px;border-radius:12px;background:#000}
+</style>
+</head>
+<body>
+<main>
+<h1>무음컷</h1>
+<p class="sub">MP3 · WAV · M4A · AAC · MP4 · MOV의 긴 공백을 아이폰에서 줄입니다.</p>
+
+<label class="pick" for="file">파일 선택<small>오디오 또는 영상 파일을 선택하세요</small></label>
 <input id="file" type="file" accept=".mp3,.wav,.m4a,.aac,.mp4,.mov,audio/*,video/mp4,video/quicktime">
-<div class="card" id="fc" hidden><span id="fn"></span></div>
-<div class="card"><div>세기</div><div class="presets">
+
+<div class="card" id="fileCard" hidden><div class="filename" id="fileName"></div></div>
+
+<div class="card">
+<div>세기</div>
+<div class="presets">
 <label class="preset"><input type="radio" name="p" value="soft"><span>부드럽게</span></label>
 <label class="preset"><input type="radio" name="p" value="normal" checked><span>보통</span></label>
-<label class="preset"><input type="radio" name="p" value="tight"><span>타이트</span></label></div>
-<div class="ctrl"><div class="row"><b>무음 기준</b><b id="tv">-50 dB</b></div><input id="t" type="range" min="-70" max="-25" value="-50"><div class="help">이보다 작은 소리를 공백으로 봅니다</div></div>
-<div class="ctrl"><div class="row"><b>최소 길이</b><b id="mv">0.10초</b></div><input id="m" type="range" min=".03" max="1" step=".01" value=".10"><div class="help">이보다 짧은 쉼은 그대로 둡니다</div></div>
-<div class="ctrl"><div class="row"><b>남길 공백</b><b id="kv">0.10초</b></div><input id="k" type="range" min="0" max=".5" step=".01" value=".10"><div class="help">문장 사이에 남길 숨 길이입니다</div></div>
-<button id="run" disabled>무음 줄이기</button><div id="res" hidden><audio id="aud" controls></audio><button id="save">결과 파일 저장/공유</button></div>
-<div id="st" class="status"></div><div class="note">원본은 변경하지 않습니다. 결과는 호환성이 높은 WAV로 새로 생성합니다.</div></div>
-</main><script>
-const q=s=>document.querySelector(s),f=q('#file'),run=q('#run'),t=q('#t'),m=q('#m'),k=q('#k'),st=q('#st'),res=q('#res'),aud=q('#aud');let blob,name;
+<label class="preset"><input type="radio" name="p" value="tight"><span>타이트</span></label>
+</div>
+
+<div class="ctrl">
+<div class="row"><b>무음 기준</b><b id="tv">-50 dB</b></div>
+<input id="t" type="range" min="-70" max="-25" value="-50">
+<div class="help">이보다 작은 소리를 공백으로 봅니다</div>
+</div>
+
+<div class="ctrl">
+<div class="row"><b>최소 길이</b><b id="mv">0.10초</b></div>
+<input id="m" type="range" min=".05" max="1" step=".01" value=".10">
+<div class="help">이보다 짧은 쉼은 그대로 둡니다</div>
+</div>
+
+<div class="ctrl">
+<div class="row"><b>남길 공백</b><b id="kv">0.10초</b></div>
+<input id="k" type="range" min="0" max=".5" step=".01" value=".10">
+<div class="help">문장 사이에 남길 숨 길이입니다</div>
+</div>
+
+<button id="run" disabled>무음 줄이기</button>
+<div class="progress" id="pg" hidden><div class="bar" id="bar"></div></div>
+
+<div id="result" hidden>
+<video id="video" controls playsinline hidden></video>
+<audio id="audio" controls hidden></audio>
+<button id="save">결과 파일 저장/공유</button>
+</div>
+
+<div id="st" class="status"></div>
+<div class="note">원본은 변경하지 않습니다. 영상은 MP4, 오디오는 WAV로 새로 생성합니다. 영상 처리는 아이폰에서 시간이 걸릴 수 있습니다.</div>
+</div>
+</main>
+
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+
+<script>
+const q=s=>document.querySelector(s);
+const f=q('#file'), run=q('#run'), t=q('#t'), m=q('#m'), k=q('#k');
+const st=q('#st'), result=q('#result'), video=q('#video'), audio=q('#audio'), save=q('#save');
+const pg=q('#pg'), bar=q('#bar');
+let outBlob=null, outName='', isVideo=false, ffmpeg=null, loaded=false, logLines=[];
+
 const P={soft:[-55,.18,.16],normal:[-50,.10,.10],tight:[-45,.06,.05]};
 function ref(){q('#tv').textContent=t.value+' dB';q('#mv').textContent=(+m.value).toFixed(2)+'초';q('#kv').textContent=(+k.value).toFixed(2)+'초'}
-[t,m,k].forEach(x=>x.oninput=ref);document.querySelectorAll('input[name=p]').forEach(x=>x.onchange=()=>{let a=P[x.value];t.value=a[0];m.value=a[1];k.value=a[2];ref()});
-function ext(n){return (n.toLowerCase().match(/\.([a-z0-9]+)$/)||[])[1]||''}
-f.onchange=()=>{let x=f.files[0];if(!x)return;q('#fn').textContent=x.name;q('#fc').hidden=false;res.hidden=true;st.className='status';if(!['mp3','wav','m4a','aac','mp4','mov'].includes(ext(x.name))){run.disabled=true;st.className='status err';st.textContent='MP3, WAV, M4A, AAC, MP4 또는 MOV 파일을 선택해 주세요.'}else{run.disabled=false;st.textContent=''}};
-function wav(ch,sr){let n=ch[0].length,nc=ch.length,b=new ArrayBuffer(44+n*nc*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,b.byteLength-8,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*nc*2,true);let o=44;for(let i=0;i<n;i++)for(let c=0;c<nc;c++){let s=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,s<0?s*32768:s*32767,true);o+=2}return new Blob([b],{type:'audio/wav'})}
-async function processAudio(){let ctx;try{run.disabled=true;st.className='status';st.textContent='파일을 읽는 중입니다...';let fi=f.files[0],AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();if(ctx.state==='suspended')await ctx.resume();let ab=await fi.arrayBuffer(),buf;try{buf=await ctx.decodeAudioData(ab.slice(0))}catch(e){throw Error(ext(fi.name)==='m4a'?'이 M4A의 내부 코덱을 Safari가 해석하지 못했습니다. 아이폰 음성 메모에서 저장한 일반 M4A(AAC)는 지원됩니다.':'이 오디오 형식을 Safari가 해석하지 못했습니다.')}let sr=buf.sampleRate,n=buf.length,nc=buf.numberOfChannels,ch=[];for(let c=0;c<nc;c++)ch.push(buf.getChannelData(c));let thr=Math.pow(10,(+t.value)/20),min=Math.round(+m.value*sr),keep=Math.round(+k.value*sr),frame=Math.max(32,Math.round(sr*.01)),sil=[];for(let s=0;s<n;s+=frame){let sum=0,cnt=0,e=Math.min(n,s+frame);for(let i=s;i<e;i+=2){let z=0;for(let c=0;c<nc;c++)z+=ch[c][i]*ch[c][i];sum+=z/nc;cnt++}sil.push(Math.sqrt(sum/Math.max(1,cnt))<thr)}let rm=new Uint8Array(n),a=0;while(a<sil.length){if(!sil[a]){a++;continue}let b=a+1;while(b<sil.length&&sil[b])b++;let ss=a*frame,ee=Math.min(n,b*frame),len=ee-ss;if(len>=min){let trim=Math.max(0,len-keep),L=Math.floor(trim/2),R=trim-L;rm.fill(1,ss,ss+L);rm.fill(1,ee-R,ee)}a=b}let kept=0;for(let i=0;i<n;i++)if(!rm[i])kept++;if(!kept)throw Error('설정이 너무 강합니다.');let out=Array.from({length:nc},()=>new Float32Array(kept)),j=0;for(let i=0;i<n;i++)if(!rm[i]){for(let c=0;c<nc;c++)out[c][j]=ch[c][i];j++}blob=wav(out,sr);name=(fi.name.replace(/\.[^.]+$/,'')||'audio')+'_무음컷.wav';aud.src=URL.createObjectURL(blob);res.hidden=false;st.textContent=`완료! ${(n/sr).toFixed(1)}초 → ${(kept/sr).toFixed(1)}초`}catch(e){st.className='status err';st.textContent='오류: '+e.message}finally{run.disabled=false;if(ctx)try{await ctx.close()}catch(e){}}}
-q('#save').onclick=async()=>{if(!blob)return;let of=new File([blob],name,{type:'audio/wav'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[of]})){try{await navigator.share({files:[of],title:'무음컷 결과'});return}catch(e){if(e.name==='AbortError')return}}let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()};ref();
-</script><script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<script>
-let videoOutBlob=null, videoOutName='';
-async function processVideo(fi){
-  const {createFFmpeg,fetchFile}=FFmpeg;
-  const logs=[];
-  const ff=createFFmpeg({log:false,corePath:'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',logger:({message})=>logs.push(message)});
-  st.className='status'; st.textContent='영상 처리 엔진을 불러오는 중입니다…\n(첫 실행은 약 25MB를 불러와 시간이 걸릴 수 있습니다)';
-  await ff.load();
-  const e=ext(fi.name), input='input.'+e;
-  ff.FS('writeFile',input,await fetchFile(fi));
-  const noise=t.value+'dB', dur=(+m.value).toFixed(3);
-  logs.length=0; st.textContent='영상의 무음 구간을 분석하는 중입니다…';
-  await ff.run('-i',input,'-af',`silencedetect=noise=${noise}:d=${dur}`,'-f','null','-');
-  const text=logs.join('\n');
-  let total=0;
-  for(const line of logs){const z=line.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);if(z){total=(+z[1])*3600+(+z[2])*60+(+z[3]);break}}
-  if(!total) throw Error('영상 길이를 확인하지 못했습니다.');
-  const sil=[]; let pending=null;
-  for(const line of logs){
-    let a=line.match(/silence_start:\s*([0-9.]+)/); if(a) pending=+a[1];
-    let b=line.match(/silence_end:\s*([0-9.]+)/); if(b&&pending!==null){sil.push([pending,+b[1]]);pending=null}
-  }
-  if(pending!==null) sil.push([pending,total]);
-  const pad=(+k.value)/2, keep=[]; let pos=0;
-  for(const [s,e2] of sil){let cutS=Math.min(e2,Math.max(pos,s+pad)),cutE=Math.max(cutS,Math.min(total,e2-pad));if(cutS>pos+.01)keep.push([pos,cutS]);pos=cutE}
-  if(pos<total-.01)keep.push([pos,total]);
-  if(!keep.length) throw Error('설정이 너무 강해 남길 영상이 없습니다.');
-  if(sil.length===0){keep.length=0;keep.push([0,total])}
-  st.textContent=`무음 ${sil.length}개 구간을 찾았습니다. 영상을 다시 만드는 중입니다…`;
-  let parts=[];
-  keep.forEach(([a,b],i)=>{parts.push(`[0:v]trim=start=${a.toFixed(3)}:end=${b.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`);parts.push(`[0:a]atrim=start=${a.toFixed(3)}:end=${b.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`)});
-  const joins=keep.map((_,i)=>`[v${i}][a${i}]`).join('');
-  parts.push(`${joins}concat=n=${keep.length}:v=1:a=1[v][a]`);
-  const out='output.mp4';
-  await ff.run('-i',input,'-filter_complex',parts.join(';'),'-map','[v]','-map','[a]','-c:v','libx264','-preset','ultrafast','-crf','23','-c:a','aac','-movflags','+faststart',out);
-  const data=ff.FS('readFile',out); videoOutBlob=new Blob([data.buffer],{type:'video/mp4'}); videoOutName=fi.name.replace(/\.[^.]+$/,'')+'_무음컷.mp4';
-  blob=videoOutBlob; name=videoOutName; aud.removeAttribute('src'); aud.style.display='none'; res.hidden=false;
-  st.textContent=`완료! ${total.toFixed(1)}초 → 약 ${keep.reduce((s,x)=>s+x[1]-x[0],0).toFixed(1)}초\n아래 저장/공유 버튼을 눌러 MP4를 저장하세요.`;
+[t,m,k].forEach(x=>x.oninput=ref);
+document.querySelectorAll('input[name=p]').forEach(x=>x.onchange=()=>{let a=P[x.value];t.value=a[0];m.value=a[1];k.value=a[2];ref()});
+
+function ext(name){return (name.toLowerCase().match(/\.([a-z0-9]+)$/)||[])[1]||''}
+function videoExt(e){return e==='mp4'||e==='mov'}
+
+f.onchange=()=>{
+ const x=f.files[0]; if(!x)return;
+ q('#fileName').textContent=x.name;q('#fileCard').hidden=false;
+ const e=ext(x.name);
+ if(!['mp3','wav','m4a','aac','mp4','mov'].includes(e)){
+   run.disabled=true; st.className='status err'; st.textContent='지원하지 않는 파일입니다.';
+   return;
+ }
+ isVideo=videoExt(e); run.disabled=false; st.className='status'; st.textContent='';
+ result.hidden=true; pg.hidden=true; bar.style.width='0%';
+};
+
+async function ensureFFmpeg(){
+ if(loaded)return;
+ st.className='status'; st.textContent='처리 엔진을 처음 한 번 준비하는 중입니다...';
+ const {FFmpeg}=FFmpegWASM;
+ const {toBlobURL}=FFmpegUtil;
+ ffmpeg=new FFmpeg();
+
+ ffmpeg.on('log',({message})=>{
+   logLines.push(message);
+   if(logLines.length>400)logLines.shift();
+ });
+ ffmpeg.on('progress',({progress})=>{
+   const p=Math.max(0,Math.min(1,progress||0));
+   bar.style.width=(p*100).toFixed(0)+'%';
+ });
+
+ const base='https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+ await ffmpeg.load({
+   coreURL:await toBlobURL(base+'/ffmpeg-core.js','text/javascript'),
+   wasmURL:await toBlobURL(base+'/ffmpeg-core.wasm','application/wasm')
+ });
+ loaded=true;
 }
-run.addEventListener('click',async ev=>{
-  const fi=f.files[0]; if(!fi)return;
-  if(['mp4','mov'].includes(ext(fi.name))){ev.preventDefault();ev.stopImmediatePropagation();run.disabled=true;res.hidden=true;aud.style.display='block';try{await processVideo(fi)}catch(e){st.className='status err';st.textContent='오류: '+(e.message||e)+'\n\n※ 긴 영상은 아이폰 메모리 제한 때문에 실패할 수 있습니다.'}finally{run.disabled=false}}
-},true);
-const oldAudio=processAudio;
-run.onclick=async()=>{const fi=f.files[0];if(fi&&!['mp4','mov'].includes(ext(fi.name)))await oldAudio()};
-</script></body></html>
+
+function parseDuration(lines){
+ for(let i=lines.length-1;i>=0;i--){
+   const m=lines[i].match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
+   if(m)return (+m[1])*3600+(+m[2])*60+(+m[3]);
+ }
+ return null;
+}
+
+function parseSilences(lines, duration){
+ const sil=[], starts=[];
+ for(const line of lines){
+   let m=line.match(/silence_start:\s*([0-9.]+)/);
+   if(m){starts.push(+m[1]);continue}
+   m=line.match(/silence_end:\s*([0-9.]+)/);
+   if(m){
+     const s=starts.length?starts.shift():0;
+     sil.push([s,+m[1]]);
+   }
+ }
+ while(starts.length && duration!=null)sil.push([starts.shift(),duration]);
+ return sil;
+}
+
+function keepSegments(duration,silences,minSilence,keepSilence){
+ const cuts=[];
+ for(const [s,e] of silences){
+   if(e-s<minSilence)continue;
+   const remove=Math.max(0,(e-s)-keepSilence);
+   if(remove<=0)continue;
+   const half=remove/2;
+   cuts.push([s+((e-s)-remove)/2, e-((e-s)-remove)/2]);
+ }
+ cuts.sort((a,b)=>a[0]-b[0]);
+ const segs=[];let pos=0;
+ for(const [a,b] of cuts){
+   const aa=Math.max(0,a),bb=Math.min(duration,b);
+   if(aa>pos+0.005)segs.push([pos,aa]);
+   pos=Math.max(pos,bb);
+ }
+ if(duration>pos+0.005)segs.push([pos,duration]);
+ return segs.filter(([a,b])=>b-a>0.01);
+}
+
+function sec(x){return Math.max(0,x).toFixed(3)}
+
+async function processFile(){
+ const fi=f.files[0]; if(!fi)return;
+ run.disabled=true; result.hidden=true; pg.hidden=false; bar.style.width='0%'; st.className='status';
+
+ try{
+   await ensureFFmpeg();
+   const {fetchFile}=FFmpegUtil;
+   const e=ext(fi.name), inName='input.'+e;
+   await ffmpeg.writeFile(inName,await fetchFile(fi));
+
+   st.textContent='무음 구간을 분석하는 중입니다...';
+   logLines=[];
+   await ffmpeg.exec([
+     '-hide_banner','-i',inName,
+     '-af',`silencedetect=noise=${t.value}dB:d=${m.value}`,
+     '-f','null','-'
+   ]);
+
+   const duration=parseDuration(logLines);
+   if(!duration)throw new Error('파일 길이를 읽지 못했습니다.');
+
+   const silences=parseSilences(logLines,duration);
+   const segs=keepSegments(duration,silences,+m.value,+k.value);
+
+   if(!segs.length)throw new Error('설정값이 너무 강해서 남길 구간이 없습니다.');
+   if(segs.length===1 && Math.abs((segs[0][1]-segs[0][0])-duration)<0.05){
+     throw new Error('줄일 수 있는 무음 구간을 찾지 못했습니다.');
+   }
+
+   st.textContent=`무음 ${silences.length}개 감지 · 결과를 만드는 중입니다...`;
+   bar.style.width='0%';
+
+   if(isVideo){
+     let filters=[],inputs=[];
+     segs.forEach(([a,b],i)=>{
+       filters.push(`[0:v]trim=start=${sec(a)}:end=${sec(b)},setpts=PTS-STARTPTS[v${i}]`);
+       filters.push(`[0:a]atrim=start=${sec(a)}:end=${sec(b)},asetpts=PTS-STARTPTS[a${i}]`);
+       inputs.push(`[v${i}][a${i}]`);
+     });
+     filters.push(`${inputs.join('')}concat=n=${segs.length}:v=1:a=1[outv][outa]`);
+
+     const out='output.mp4';
+     await ffmpeg.exec([
+       '-hide_banner','-i',inName,
+       '-filter_complex',filters.join(';'),
+       '-map','[outv]','-map','[outa]',
+       '-c:v','libx264','-preset','ultrafast','-crf','24',
+       '-c:a','aac','-b:a','160k',
+       '-threads','1','-movflags','+faststart',
+       out
+     ]);
+     const data=await ffmpeg.readFile(out);
+     outBlob=new Blob([data.buffer],{type:'video/mp4'});
+     outName=fi.name.replace(/\.[^.]+$/,'')+'_무음컷.mp4';
+     video.src=URL.createObjectURL(outBlob);video.hidden=false;audio.hidden=true;
+   }else{
+     let filters=[],inputs=[];
+     segs.forEach(([a,b],i)=>{
+       filters.push(`[0:a]atrim=start=${sec(a)}:end=${sec(b)},asetpts=PTS-STARTPTS[a${i}]`);
+       inputs.push(`[a${i}]`);
+     });
+     filters.push(`${inputs.join('')}concat=n=${segs.length}:v=0:a=1[outa]`);
+
+     const out='output.wav';
+     await ffmpeg.exec([
+       '-hide_banner','-i',inName,
+       '-filter_complex',filters.join(';'),
+       '-map','[outa]','-c:a','pcm_s16le','-threads','1',out
+     ]);
+     const data=await ffmpeg.readFile(out);
+     outBlob=new Blob([data.buffer],{type:'audio/wav'});
+     outName=fi.name.replace(/\.[^.]+$/,'')+'_무음컷.wav';
+     audio.src=URL.createObjectURL(outBlob);audio.hidden=false;video.hidden=true;
+   }
+
+   result.hidden=false;bar.style.width='100%';
+   const kept=segs.reduce((s,[a,b])=>s+(b-a),0);
+   st.className='status';st.textContent=`완료! ${duration.toFixed(1)}초 → ${kept.toFixed(1)}초 (${Math.max(0,duration-kept).toFixed(1)}초 줄어듦)`;
+ }catch(e){
+   st.className='status err';
+   st.textContent='오류: '+(e?.message||String(e))+'\n\n아이폰에서는 긴 영상이나 고해상도 영상이 메모리 부족으로 실패할 수 있습니다.';
+ }finally{
+   run.disabled=false;
+ }
+}
+
+run.onclick=processFile;
+
+save.onclick=async()=>{
+ if(!outBlob)return;
+ const type=isVideo?'video/mp4':'audio/wav';
+ const outFile=new File([outBlob],outName,{type});
+ if(navigator.share&&navigator.canShare&&navigator.canShare({files:[outFile]})){
+   try{await navigator.share({files:[outFile],title:'무음컷 결과'});return}catch(e){if(e.name==='AbortError')return}
+ }
+ const a=document.createElement('a');a.href=URL.createObjectURL(outBlob);a.download=outName;a.click();
+};
+ref();
+</script>
+</body>
+</html>
